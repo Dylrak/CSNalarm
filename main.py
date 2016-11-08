@@ -1,7 +1,13 @@
 import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(0, GPIO.IN)
+
+
+# constants
+WINDOW = 11  # GPIO port for the 'window' (a.k.a. alarm initiation)
+
+# init
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(WINDOW, GPIO.IN)
 while True:
-    if GPIO.input(0) == 1:
+    if GPIO.input(WINDOW) == 1:
         print('Button clicked!')
         break
