@@ -27,16 +27,16 @@ class Main:
             if state == State.IDLE:  # IDLE State means detecting if someone 'broke in'
                 if GPIO.input(WINDOW_PORT):
                     state = State.ALARM
-                    GPIO.output(ALARM_PORT, GPIO.HIGH)
+                    GPIO.output(ALARM_PORT, True)
             else:  # Else, the state is ALARM or LOGIN. This means we wait for login press to enter password.
                 if GPIO.input(LOGIN_PORT):
                     state = State.LOGIN
                 if state == State.LOGIN:
-                    if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
+                    """if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
                         print('Uw wachtwoord klopt niet.')
                         while not LOGIN_PASS == input('Voer uw wachtwoord in: '):
-                            print('Uw wachtwoord klopt niet.')
-                        # After this while loop we have a valid password.
-                        state = State.IDLE
-                        GPIO.output(ALARM_PORT, False)
+                            print('Uw wachtwoord klopt niet.')"""
+                    # After this while loop we have a valid password.
+                    state = State.IDLE
+                    GPIO.output(ALARM_PORT, False)
         GPIO.cleanup()
