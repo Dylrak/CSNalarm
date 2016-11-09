@@ -1,7 +1,5 @@
 import RPi.GPIO as GPIO
-import sys
-import select
-
+from getpass import getpass
 
 # constants
 WINDOW_PORT = 11  # GPIO port for the 'window' (a.k.a. alarm initiation)
@@ -14,56 +12,32 @@ class State:
     IDLE = 0
     ALARM = 1
     LOGIN = 2
-    # These last two states are for the alarms.
-    INCREASING = 3
-    DECREASING = 4
 
 
 class Main:
     def __init__(self):
         # initiating GPIO header
+        GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(WINDOW_PORT, GPIO.IN)
+        GPIO.setup(ALARM_PORT, GPIO.OUT)
+        GPIO.setup(LOGIN_PORT, GPIO.IN)
         state = State.IDLE
-        myAlarm = Alarm()
         self.running = True
         while self.running:  # MAIN while-loop, checks for program state.
             if state == State.IDLE:  # IDLE State means detecting if someone 'broke in'
                 if GPIO.input(WINDOW_PORT):
                     state = State.ALARM
-            else:  # Else, the state is ALARM or LOGIN.
-                myAlarm.changeBrightness()
+                    GPIO.output(ALARM_PORT, GPIO.HIGH)
+            else:  # Else, the state is ALARM or LOGIN. This means we wait for login press to enter password.
+                if GPIO.input(LOGIN_PORT):
+                    state = State.LOGIN
                 if state == State.LOGIN:
-                    userHasEnteredPass, o, e = select.select([sys.stdin], [], [], 10)
-                    if userHasEnteredPass and LOGIN_PASS == sys.stdin.readline().strip():  # sys.stdin is the user input
+                    if not LOGIN_PASS == getpass('Voer uw wachtwoord in: '):
+                        print('Uw wachtwoord klopt niet.')
+                        while not LOGIN_PASS == getpass('Voer uw wachtwoord in: '):
+                            print('Uw wachtwoord klopt niet.')
+                        # After this while loop we have a valid password.
                         state = State.IDLE
+                        GPIO.output(ALARM_PORT, False)
         GPIO.cleanup()
-
-
-class Alarm:
-
-    def __init__(self):
-        GPIO.setwarnings(False)
-        self.alarm = GPIO.PWM(ALARM_PORT, 100)
-        self.brightness = 0
-        self.state = State.INCREASING
-        self.alarm.start(0)
-
-    def changeBrightness(self):
-        step = 1
-        maximum = 100
-        if self.state == State.INCREASING:
-            self.brightness += step
-            if self.brightness == maximum:
-                self.state = State.DECREASING
-        else:
-            self.brightness -= step
-            if self.brightness == 0:
-                self.state = State.INCREASING
-        try:
-            self.alarm.ChangeDutyCycle(self.brightness)
-        except KeyboardInterrupt:
-            Main.running = False
-        finally:
-            GPIO.cleanup
-Main()
