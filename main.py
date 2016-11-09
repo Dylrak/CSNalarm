@@ -1,7 +1,6 @@
 import RPi.GPIO as GPIO
 import sys
 import select
-from time import sleep
 
 
 # constants
@@ -25,30 +24,33 @@ class Main:
         # initiating GPIO header
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(WINDOW_PORT, GPIO.IN)
-        GPIO.setup(ALARM_PORT, GPIO.OUT)
         state = State.IDLE
-        alarm = Alarm()
-        while True:  # MAIN while-loop, checks for program state.
+        myAlarm = Alarm()
+        self.running = True
+        while self.running:  # MAIN while-loop, checks for program state.
             if state == State.IDLE:  # IDLE State means detecting if someone 'broke in'
                 if GPIO.input(WINDOW_PORT):
                     state = State.ALARM
             else:  # Else, the state is ALARM or LOGIN.
-                alarm.changeBrightness()
+                myAlarm.changeBrightness()
                 if state == State.LOGIN:
                     userHasEnteredPass, o, e = select.select([sys.stdin], [], [], 10)
                     if userHasEnteredPass and LOGIN_PASS == sys.stdin.readline().strip():  # sys.stdin is the user input
                         state = State.IDLE
+        GPIO.cleanup()
 
 
 class Alarm:
 
     def __init__(self):
         GPIO.setwarnings(False)
+        self.alarm = GPIO.PWM(ALARM_PORT, 100)
         self.brightness = 0
         self.state = State.INCREASING
+        self.alarm.start(0)
 
     def changeBrightness(self):
-        step = 10
+        step = 1
         maximum = 100
         if self.state == State.INCREASING:
             self.brightness += step
@@ -58,5 +60,10 @@ class Alarm:
             self.brightness -= step
             if self.brightness == 0:
                 self.state = State.INCREASING
-        GPIO.output(ALARM_PORT, self.brightness)
+        try:
+            self.alarm.ChangeDutyCycle(self.brightness)
+        except KeyboardInterrupt:
+            Main.running = False
+        finally:
+            GPIO.cleanup
 Main()
