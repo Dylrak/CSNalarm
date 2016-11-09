@@ -1,5 +1,4 @@
 import RPi.GPIO as GPIO
-from getpass import getpass
 
 # constants
 WINDOW_PORT = 11  # GPIO port for the 'window' (a.k.a. alarm initiation)
@@ -33,9 +32,9 @@ class Main:
                 if GPIO.input(LOGIN_PORT):
                     state = State.LOGIN
                 if state == State.LOGIN:
-                    if not LOGIN_PASS == getpass('Voer uw wachtwoord in: '):
+                    if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
                         print('Uw wachtwoord klopt niet.')
-                        while not LOGIN_PASS == getpass('Voer uw wachtwoord in: '):
+                        while not LOGIN_PASS == input('Voer uw wachtwoord in: '):
                             print('Uw wachtwoord klopt niet.')
                         # After this while loop we have a valid password.
                         state = State.IDLE
