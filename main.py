@@ -1,49 +1,62 @@
 import RPi.GPIO as GPIO
+import sys
+import select
 from time import sleep
 
 
 # constants
-WINDOW = 11  # GPIO port for the 'window' (a.k.a. alarm initiation)
-ALARM = 13  # port for alarm(s)
-LOGIN = 15  # port for button to initiate login protocol
+WINDOW_PORT = 11  # GPIO port for the 'window' (a.k.a. alarm initiation)
+ALARM_PORT = 13  # port for alarm(s)
+LOGIN_PORT = 15  # port for button to initiate login protocol
 LOGIN_PASS = 'jemoeder'  # password for login
 
-alarmActivated = False
 
-def detection(port):  # We start by checking, as fast as we can, for a button press to init alarm.
-    while True:
-        if GPIO.input(port):  # As soon as we have input, we break the while loop.
-            break
-
-
-def activateAlarm():
-    time_per_step = 10
-
-    GPIO.setwarnings(False)
-
-    def incrementBrightness(maximum, offset):
-        for looping in range(time_per_step):
-            for x in range(maximum):
-                GPIO.output(ALARM, x < offset)
-
-    mymax = 100
-    while not GPIO.input(LOGIN):
-        for myOffset in range(mymax):
-            incrementBrightness(mymax, myOffset)
-        for myOffset in reversed(range(mymax)):
-            incrementBrightness(mymax, myOffset)
+class State:
+    IDLE = 0
+    ALARM = 1
+    LOGIN = 2
+    # These last two states are for the alarms.
+    INCREASING = 3
+    DECREASING = 4
 
 
-def login():
-    userPass = input('Typ het wachtwoord in om het alarm uit te zetten:')
+class Main:
+    def __init__(self):
+        # initiating GPIO header
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(WINDOW_PORT, GPIO.IN)
+        GPIO.setup(ALARM_PORT, GPIO.OUT)
+        state = State.IDLE
+        alarm = Alarm()
+        while True:  # MAIN while-loop, checks for program state.
+            if state == State.IDLE:  # IDLE State means detecting if someone 'broke in'
+                if GPIO.input(WINDOW_PORT):
+                    state = State.ALARM
+            else:  # Else, the state is ALARM or LOGIN.
+                alarm.changeBrightness()
+                if state == State.LOGIN:
+                    userHasEnteredPass, o, e = select.select([sys.stdin], [], [], 10)
+                    if userHasEnteredPass and LOGIN_PASS == sys.stdin.readline().strip():  # sys.stdin is the user input
+                        state = State.IDLE
 
-def init():
-    # initiating GPIO header
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(WINDOW, GPIO.IN)
-    GPIO.setup(ALARM, GPIO.OUT)
 
-    detection(WINDOW)
-    activateAlarm()
-    login()
+class Alarm:
 
+    def __init__(self):
+        GPIO.setwarnings(False)
+        self.brightness = 0
+        self.state = State.INCREASING
+
+    def changeBrightness(self):
+        step = 10
+        maximum = 100
+        if self.state == State.INCREASING:
+            self.brightness += step
+            if self.brightness == maximum:
+                self.state = State.DECREASING
+        else:
+            self.brightness -= step
+            if self.brightness == 0:
+                self.state = State.INCREASING
+        GPIO.output(ALARM_PORT, self.brightness)
+Main()
