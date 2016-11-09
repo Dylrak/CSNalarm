@@ -23,20 +23,25 @@ class Main:
         GPIO.setup(LOGIN_PORT, GPIO.IN)
         state = State.IDLE
         self.running = True
-        while self.running:  # MAIN while-loop, checks for program state.
-            if state == State.IDLE:  # IDLE State means detecting if someone 'broke in'
-                if GPIO.input(WINDOW_PORT):
-                    state = State.ALARM
-                    GPIO.output(ALARM_PORT, True)
-            else:  # Else, the state is ALARM or LOGIN. This means we wait for login press to enter password.
-                if GPIO.input(LOGIN_PORT):
-                    state = State.LOGIN
-                if state == State.LOGIN:
-                    """if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
-                        print('Uw wachtwoord klopt niet.')
-                        while not LOGIN_PASS == input('Voer uw wachtwoord in: '):
-                            print('Uw wachtwoord klopt niet.')"""
-                    # After this while loop we have a valid password.
-                    state = State.IDLE
-                    GPIO.output(ALARM_PORT, False)
-        GPIO.cleanup()
+        try:
+            while self.running:  # MAIN while-loop, checks for program state.
+                if state == State.IDLE:  # IDLE State means detecting if someone 'broke in'
+                    if GPIO.input(WINDOW_PORT):
+                        state = State.ALARM
+                        GPIO.output(ALARM_PORT, True)
+                        # TODO: time the last time we switched the alarm on, call it timeSinceLastSwitch
+                else:  # Else, the state is ALARM or LOGIN. This means we wait for login press to enter password.
+                    # TODO: compare timeSinceLastSwitch to currTime, if greater than set e.g. 1 second switch light on/off
+                    if GPIO.input(LOGIN_PORT):
+                        state = State.LOGIN
+                    if state == State.LOGIN:
+                        if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
+                            print('Uw wachtwoord klopt niet.')
+                            while not LOGIN_PASS == input('Voer uw wachtwoord in: '):
+                                print('Uw wachtwoord klopt niet.')
+                        # After this while loop we have a valid password.
+                        state = State.IDLE
+                        GPIO.output(ALARM_PORT, False)
+        finally:
+            GPIO.cleanup()
+Main()
