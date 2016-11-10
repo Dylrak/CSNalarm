@@ -3,12 +3,9 @@ import time
 import random
 import sqlite3
 
-# Todo - set this port to a real GPIO port
-PORT_LAMP = 1
-# Todo - set this port to a real GPIO port
-PORT_PLAYER1 = 2
-# Todo - set this port to a real GPIO port
-PORT_PLAYER2 = 3
+PORT_LAMP = 11
+PORT_PLAYER1 = 13
+PORT_PLAYER2 = 15
 
 KEY_PLAY_GAME = 'S'
 KEY_HIGHSCORE = 'H'
