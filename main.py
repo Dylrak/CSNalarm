@@ -25,55 +25,46 @@ GPIO.setup(ALARM_PORT, GPIO.OUT)
 GPIO.setup(LOGIN_PORT, GPIO.IN)
 state = State.IDLE
 
-isFlashing = False
+isflashing = False
 
 running = True
 
-def flashFunction(maxRange, offset):
-    for looping in range(TIME_PER_STEP):
-        for x in range(maxRange):
-            GPIO.output(ALARM_PORT, x < offset)
-            time.sleep(0.005)
-
-
-while not GPIO.input(WINDOW_PORT):
-    for offset in range(MAX_STEPS):
-        flashFunction(MAX_STEPS, offset)
-    for offset in reversed(range(MAX_STEPS)):
-        flashFunction(MAX_STEPS, offset)
-
-
 def flashing():
     """Thread flashing function"""
+        
     while True:
-        while isFlashing:
-            for offset in range(MAX_STEPS):
-                flashFunction(MAX_STEPS, offset)
-            for offset in reversed(range(MAX_STEPS)):
-                flashFunction(MAX_STEPS, offset)
-        time.sleep(0.05)
-
-
-flash_thread = threading.Thread(target=flashing)
-flash_thread.start()
-
-try:
-    while running:  # MAIN while-loop, checks for program state.
-        if state == State.IDLE and GPIO.input(WINDOW_PORT):  # IDLE State means detecting if someone 'broke in'
-            state = State.ALARM
+        if isflashing:
             GPIO.output(ALARM_PORT, True)
-            isFlashing = True
-        # Else, the state is ALARM or LOGIN. This means we wait for login press to enter password.
-        elif GPIO.input(LOGIN_PORT):
-           state = State.LOGIN
-        elif state == State.LOGIN:
-            if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
-                print('Uw wachtwoord klopt niet.')
-                while not LOGIN_PASS == input('Voer uw wachtwoord in: '):
-                    print('Uw wachtwoord klopt niet.')
-            # After this while loop we have a valid password.
-            state = State.IDLE
-            isFlashing = False
-finally:
-    GPIO.cleanup()
+            time.sleep(0.1)
+            GPIO.output(ALARM_PORT, False)
+            time.sleep(0.1)
+        time.sleep(0.25)
 
+
+print('starting')
+flash_thread = threading.Thread(target=flashing)
+
+print('other program')
+running = True
+flash_thread.start()
+while running:  # MAIN while-loop, checks for program state.
+    if state == State.IDLE and GPIO.input(WINDOW_PORT):  # IDLE State means detecting if someone 'broke in'
+        state = State.ALARM
+        GPIO.output(ALARM_PORT, True)
+        isflashing = True
+    # Else, the state is ALARM or LOGIN. This means we wait for login press to enter password.
+    elif GPIO.input(LOGIN_PORT):
+        state = State.LOGIN
+    elif state == State.LOGIN:
+        if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
+            print('Uw wachtwoord klopt niet.')
+            while not LOGIN_PASS == input('Voer uw wachtwoord in: '):
+                print('Uw wachtwoord klopt niet.')
+                    # After this while loop we have a valid password.
+        state = State.IDLE
+        isflashing = False
+        GPIO.output(ALARM_PORT, False)
+    time.sleep(0.1)
+print('starting threads')
+
+GPIO.cleanup()
