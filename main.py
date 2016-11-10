@@ -3,10 +3,10 @@ import threading
 import time
 
 # constants
-WINDOW_PORT = 11  # GPIO port for the 'window' (a.k.a. alarm initiation)
-ALARM_PORT = 13  # port for alarm(s)
+WINDOW_PORT = 13  # GPIO port for the 'window' (a.k.a. alarm initiation)
+ALARM_PORT = 11  # port for alarm(s)
 LOGIN_PORT = 15  # port for button to initiate login protocol
-LOGIN_PASS = 'jemoeder'  # password for login
+LOGIN_PASS = 'test'  # password for login
 
 TIME_PER_STEP = 10
 MAX_STEPS = 100
@@ -35,10 +35,11 @@ def flashing():
     while True:
         if isflashing:
             GPIO.output(ALARM_PORT, True)
-            time.sleep(0.1)
+            time.sleep(flash_time)
             GPIO.output(ALARM_PORT, False)
-            time.sleep(0.1)
-        time.sleep(flash_time)
+            time.sleep(flash_time)
+        else:
+            time.sleep(flash_time)
 
 
 print('starting')
@@ -56,13 +57,29 @@ while running:  # MAIN while-loop, checks for program state.
     elif GPIO.input(LOGIN_PORT):
         state = State.LOGIN
     elif state == State.LOGIN:
-        if not LOGIN_PASS == input('Voer uw wachtwoord in: '):
+        if LOGIN_PASS == input('Voer uw wachtwoord in: '):
+            state = State.IDLE
+            isflashing = False
+            GPIO.output(ALARM_PORT, False)
+            
+            while True:
+                result = input('which setting would you like to change?\n[1] Flash time\n[2] Password\n[3] exit menu\n:')
+                if result == '1':
+                    try:
+                        flash_time = eval(input("How long should the alarm wait inbetween flashes?: "))
+                    except:
+                        print('invalid value')
+                elif result == '2':
+                    TEMP_PASS = input('Enter Password: ')
+                    TEMP_PASS2 = input('Password again: ')
+                    if TEMP_PASS == TEMP_PASS2:
+                        LOGIN_PASS = TEMP_PASS
+                    else:
+                        print('Password doesn\'t match.')
+                else:
+                    break
+        else:
             print('Uw wachtwoord klopt niet.')
-        elif input("Would you like to change settings? Y/N: ") == 'Y':
-            flash_time = input("How long should the alarm wait inbetween flashes?: ")
-        state = State.IDLE
-        isflashing = False
-        GPIO.output(ALARM_PORT, False)
     time.sleep(0.1)
 print('starting threads')
 
